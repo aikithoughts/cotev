@@ -1,0 +1,19 @@
+{
+  "name": "cotev",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "concurrently -n server,client -c blue,green \"node --watch server.js\" \"npm --prefix client run dev\""
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.97.1",
+    "concurrently": "^9.2.1",
+    "connect-mongo": "^5.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "mongoose": "^8.4.0"
+  }
+}
