@@ -3,11 +3,8 @@ import express from 'express';
 import mongoose from 'mongoose';
 import Anthropic from '@anthropic-ai/sdk/index.js';
 import cors from 'cors';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { clerkMiddleware, getAuth, createClerkClient } from '@clerk/express';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -124,11 +121,6 @@ Respond with only a JSON array of 3 strings. No explanation, no labels.`,
   }
 });
 
-// --- Serve React app in production ---
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, 'client/dist')));
-  app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'client/dist/index.html')));
-}
 
 const PORT = process.env.PORT || 3002;
 if (process.env.NODE_ENV !== 'production') {
