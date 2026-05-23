@@ -83,11 +83,18 @@ export default function Editor({ doc, font, mode, onFontToggle, onClose }) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  // Always fetch the full document on mount — the list endpoint omits content
   useEffect(() => {
-    if (editor && doc.content) {
-      editor.commands.setContent(doc.content);
-      setWords(wordCount(editor.getText()));
-    }
+    if (!editor) return;
+    fetch(`/api/documents/${docId}`, { credentials: 'include' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.content) {
+          editor.commands.setContent(data.content);
+          setWords(wordCount(editor.getText()));
+        }
+      });
+
   }, []);
 
   useEffect(() => () => clearTimeout(saveTimer.current), []);
