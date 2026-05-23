@@ -1,22 +1,24 @@
 import 'dotenv/config';
 import express from 'express';
-import session from 'express-session';
-import MongoStore from 'connect-mongo';
 import mongoose from 'mongoose';
 import Anthropic from '@anthropic-ai/sdk/index.js';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { clerkMiddleware, getAuth, createClerkClient } from '@clerk/express';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
 // --- MongoDB ---
 await mongoose.connect(process.env.MONGODB_URI);
 console.log('Connected to MongoDB');
 
 const documentSchema = new mongoose.Schema({
+  userId: { type: String, required: true, index: true },
   title: { type: String, required: true },
   description: { type: String, default: '' },
   content: { type: String, default: '' },
@@ -30,60 +32,58 @@ app.use(cors({
   origin: process.env.NODE_ENV === 'production' ? false : 'http://localhost:5173',
   credentials: true,
 }));
-app.use(session({
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI, dbName: 'cotev' }),
-  cookie: { httpOnly: true, maxAge: 1000 * 60 * 60 * 24 * 30 },
-}));
+app.use(clerkMiddleware());
 
-// --- Auth routes (public) ---
-app.post('/auth/login', (req, res) => {
-  const { username, password } = req.body;
-  if (username === process.env.APP_USERNAME && password === process.env.APP_PASSWORD) {
-    req.session.authenticated = true;
-    return res.json({ ok: true });
+// --- Auth guard with email allowlist ---
+const ALLOWED_EMAILS = (process.env.ALLOWED_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+const emailCache = new Map();
+
+async function requireAuth(req, res, next) {
+  const { userId } = getAuth(req);
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  if (process.env.NODE_ENV === 'production' && ALLOWED_EMAILS.length > 0) {
+    if (!emailCache.has(userId)) {
+      try {
+        const user = await clerkClient.users.getUser(userId);
+        const email = user.emailAddresses[0]?.emailAddress?.toLowerCase() || '';
+        emailCache.set(userId, email);
+      } catch {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+    }
+    const email = emailCache.get(userId);
+    if (!ALLOWED_EMAILS.includes(email)) {
+      return res.status(403).json({ error: 'Access restricted' });
+    }
   }
-  res.status(401).json({ error: 'Invalid credentials' });
-});
 
-app.post('/auth/logout', (req, res) => {
-  req.session.destroy(() => res.json({ ok: true }));
-});
-
-app.get('/auth/status', (req, res) => {
-  res.json({ authenticated: !!req.session.authenticated });
-});
-
-// --- Auth guard ---
-function requireAuth(req, res, next) {
-  if (req.session.authenticated) return next();
-  res.status(401).json({ error: 'Unauthorized' });
+  req.userId = userId;
+  next();
 }
 
 // --- Document routes ---
 app.get('/api/documents', requireAuth, async (req, res) => {
-  const docs = await Document.find({}, 'title description createdAt updatedAt').sort({ updatedAt: -1 });
+  const docs = await Document.find({ userId: req.userId }, 'title description createdAt updatedAt').sort({ updatedAt: -1 });
   res.json(docs);
 });
 
 app.post('/api/documents', requireAuth, async (req, res) => {
   const { title, description, content } = req.body;
-  const doc = await Document.create({ title, description: description || '', content: content || '' });
+  const doc = await Document.create({ userId: req.userId, title, description: description || '', content: content || '' });
   res.status(201).json(doc);
 });
 
 app.get('/api/documents/:id', requireAuth, async (req, res) => {
-  const doc = await Document.findById(req.params.id);
+  const doc = await Document.findOne({ _id: req.params.id, userId: req.userId });
   if (!doc) return res.status(404).json({ error: 'Not found' });
   res.json(doc);
 });
 
 app.put('/api/documents/:id', requireAuth, async (req, res) => {
   const { title, content } = req.body;
-  const doc = await Document.findByIdAndUpdate(
-    req.params.id,
+  const doc = await Document.findOneAndUpdate(
+    { _id: req.params.id, userId: req.userId },
     { ...(title !== undefined && { title }), ...(content !== undefined && { content }) },
     { new: true }
   );
@@ -92,7 +92,7 @@ app.put('/api/documents/:id', requireAuth, async (req, res) => {
 });
 
 app.delete('/api/documents/:id', requireAuth, async (req, res) => {
-  await Document.findByIdAndDelete(req.params.id);
+  await Document.findOneAndDelete({ _id: req.params.id, userId: req.userId });
   res.json({ ok: true });
 });
 
@@ -130,5 +130,9 @@ if (process.env.NODE_ENV === 'production') {
   app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'client/dist/index.html')));
 }
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`cotev running on port ${PORT}`));
+const PORT = process.env.PORT || 3002;
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => console.log(`cotev running on port ${PORT}`));
+}
+
+export default app;

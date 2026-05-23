@@ -1,22 +1,16 @@
 import { useState, useEffect } from 'react';
-import Login from './screens/Login.jsx';
+import { useAuth, SignIn } from '@clerk/react';
 import Threshold from './screens/Threshold.jsx';
 import NewDocument from './screens/NewDocument.jsx';
 import Editor from './screens/Editor.jsx';
 import { applyTheme } from './animations.js';
 
 export default function App() {
-  const [auth, setAuth] = useState(null);
+  const { isLoaded, isSignedIn } = useAuth();
   const [screen, setScreen] = useState('threshold');
   const [activeDoc, setActiveDoc] = useState(null);
   const [font, setFont] = useState('serif');
   const [mode, setMode] = useState(() => localStorage.getItem('cotev-mode') || 'plain');
-
-  useEffect(() => {
-    fetch('/auth/status', { credentials: 'include' })
-      .then(r => r.json())
-      .then(d => setAuth(d.authenticated));
-  }, []);
 
   useEffect(() => {
     document.body.className = font === 'sans' ? 'font-sans' : '';
@@ -27,8 +21,15 @@ export default function App() {
     applyTheme(mode);
   }, [mode]);
 
-  if (auth === null) return null;
-  if (!auth) return <Login onLogin={() => setAuth(true)} />;
+  if (!isLoaded) return null;
+
+  if (!isSignedIn) {
+    return (
+      <div style={styles.signInWrap}>
+        <SignIn routing="hash" />
+      </div>
+    );
+  }
 
   if (screen === 'new') {
     return (
@@ -59,10 +60,15 @@ export default function App() {
       onFontToggle={() => setFont(f => f === 'serif' ? 'sans' : 'serif')}
       onNew={() => setScreen('new')}
       onOpen={(doc) => { setActiveDoc(doc); setScreen('editor'); }}
-      onLogout={() => {
-        fetch('/auth/logout', { method: 'POST', credentials: 'include' });
-        setAuth(false);
-      }}
     />
   );
 }
+
+const styles = {
+  signInWrap: {
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+};

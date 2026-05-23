@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useClerk } from '@clerk/react';
+import { useApiFetch } from '../useApiFetch.js';
 
 const MODES = [
   { key: 'plain',  label: 'Plain' },
@@ -12,13 +14,15 @@ function formatDate(iso) {
   return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
-export default function Threshold({ font, mode, onModeChange, onFontToggle, onNew, onOpen, onLogout }) {
+export default function Threshold({ font, mode, onModeChange, onFontToggle, onNew, onOpen }) {
+  const { signOut } = useClerk();
+  const apiFetch = useApiFetch();
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    fetch('/api/documents', { credentials: 'include' })
+    apiFetch('/api/documents')
       .then(r => r.json())
       .then(data => { setDocs(data); setLoading(false); });
     setTimeout(() => setVisible(true), 80);
@@ -33,7 +37,7 @@ export default function Threshold({ font, mode, onModeChange, onFontToggle, onNe
           <button onClick={onFontToggle} style={styles.meta} title="Toggle font">
             {font === 'serif' ? 'Aa' : 'Aa'}
           </button>
-          <button onClick={onLogout} style={styles.meta}>leave</button>
+          <button onClick={() => signOut()} style={styles.meta}>leave</button>
         </div>
       </header>
 

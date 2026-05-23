@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useApiFetch } from '../useApiFetch.js';
 
 export default function NewDocument({ onOpen, onBack }) {
+  const apiFetch = useApiFetch();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
@@ -9,10 +11,8 @@ export default function NewDocument({ onOpen, onBack }) {
     e.preventDefault();
     if (!title.trim()) return;
     setLoading(true);
-    const res = await fetch('/api/documents', {
+    const res = await apiFetch('/api/documents', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify({ title, description }),
     });
     const doc = await res.json();

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useApiFetch } from '../useApiFetch.js';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Typography from '@tiptap/extension-typography';
@@ -15,6 +16,7 @@ function wordCount(text) {
 }
 
 export default function Editor({ doc, font, mode, onFontToggle, onClose }) {
+  const apiFetch = useApiFetch();
   const [title, setTitle] = useState(doc.title);
   const [saved, setSaved] = useState(true);
   const [focused, setFocused] = useState(false);
@@ -24,10 +26,8 @@ export default function Editor({ doc, font, mode, onFontToggle, onClose }) {
   const docId = doc._id;
 
   const save = async (content, currentTitle) => {
-    await fetch(`/api/documents/${docId}`, {
+    await apiFetch(`/api/documents/${docId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify({ content, title: currentTitle }),
     });
     setSaved(true);
@@ -86,7 +86,7 @@ export default function Editor({ doc, font, mode, onFontToggle, onClose }) {
   // Always fetch the full document on mount — the list endpoint omits content
   useEffect(() => {
     if (!editor) return;
-    fetch(`/api/documents/${docId}`, { credentials: 'include' })
+    apiFetch(`/api/documents/${docId}`)
       .then(r => r.json())
       .then(data => {
         if (data.content) {
@@ -94,7 +94,6 @@ export default function Editor({ doc, font, mode, onFontToggle, onClose }) {
           setWords(wordCount(editor.getText()));
         }
       });
-
   }, []);
 
   useEffect(() => () => clearTimeout(saveTimer.current), []);
