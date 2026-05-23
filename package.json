@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "concurrently -n server,client -c blue,green \"node --watch server.js\" \"npm --prefix client run dev\"",
-    "vercel-build": "npm --prefix client install && npm --prefix client run build"
+    "vercel-build": "npm --prefix client install --include=dev && npm --prefix client run build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.97.1",
