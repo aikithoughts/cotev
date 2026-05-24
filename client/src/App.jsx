@@ -5,12 +5,15 @@ import NewDocument from './screens/NewDocument.jsx';
 import Editor from './screens/Editor.jsx';
 import { applyTheme } from './animations.js';
 
+const GUEST_DOC = { _id: 'guest', title: '', content: '' };
+
 export default function App() {
   const { isLoaded, isSignedIn } = useAuth();
   const [screen, setScreen] = useState('threshold');
   const [activeDoc, setActiveDoc] = useState(null);
   const [font, setFont] = useState('serif');
   const [mode, setMode] = useState(() => localStorage.getItem('cotev-mode') || 'plain');
+  const [guest, setGuest] = useState(false);
 
   useEffect(() => {
     document.body.className = font === 'sans' ? 'font-sans' : '';
@@ -23,11 +26,28 @@ export default function App() {
 
   if (!isLoaded) return null;
 
-  if (!isSignedIn) {
+  if (!isSignedIn && !guest) {
     return (
       <div style={styles.signInWrap}>
         <SignIn routing="hash" />
+        <button onClick={() => setGuest(true)} style={styles.guestBtn}>
+          Try without signing in
+        </button>
       </div>
+    );
+  }
+
+  if (!isSignedIn && guest) {
+    return (
+      <Editor
+        doc={GUEST_DOC}
+        font={font}
+        mode={mode}
+        guest
+        onFontToggle={() => setFont(f => f === 'serif' ? 'sans' : 'serif')}
+        onModeChange={setMode}
+        onClose={() => setGuest(false)}
+      />
     );
   }
 
@@ -68,7 +88,18 @@ const styles = {
   signInWrap: {
     height: '100%',
     display: 'flex',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: '1.5rem',
+  },
+  guestBtn: {
+    fontSize: '1rem',
+    color: 'var(--ink-faint)',
+    letterSpacing: '0.03em',
+    fontStyle: 'italic',
+    textDecoration: 'underline',
+    textDecorationColor: 'var(--ink-ghost)',
+    textUnderlineOffset: '3px',
   },
 };

@@ -16,7 +16,9 @@ function wordCount(text) {
   return text.trim() ? text.trim().split(/\s+/).length : 0;
 }
 
-export default function Editor({ doc, font, mode, onFontToggle, onClose }) {
+const MODES = ['plain', 'autumn', 'rain', 'starry'];
+
+export default function Editor({ doc, font, mode, guest, onFontToggle, onModeChange, onClose }) {
   const apiFetch = useApiFetch();
   const [title, setTitle] = useState(doc.title);
   const [saved, setSaved] = useState(true);
@@ -27,6 +29,7 @@ export default function Editor({ doc, font, mode, onFontToggle, onClose }) {
   const docId = doc._id;
 
   const save = async (content, currentTitle) => {
+    if (guest) return;
     await apiFetch(`/api/documents/${docId}`, {
       method: 'PUT',
       body: JSON.stringify({ content, title: currentTitle }),
@@ -109,7 +112,7 @@ export default function Editor({ doc, font, mode, onFontToggle, onClose }) {
 
   // Always fetch the full document on mount — the list endpoint omits content
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || guest) return;
     apiFetch(`/api/documents/${docId}`)
       .then(r => r.json())
       .then(data => {
@@ -150,7 +153,15 @@ export default function Editor({ doc, font, mode, onFontToggle, onClose }) {
       <div style={{ ...styles.chrome, opacity: focused ? 0.08 : 1 }}>
         <button onClick={onClose} style={styles.chromeBtn}>← all writing</button>
         <div style={styles.chromeMeta}>
-          <span style={styles.savedDot}>{saved ? '' : '·'}</span>
+          {guest
+            ? <span style={styles.guestNote}>sign in to save</span>
+            : <span style={styles.savedDot}>{saved ? '' : '·'}</span>
+          }
+          {guest && MODES.map(m => (
+            <button key={m} onClick={() => onModeChange(m)} style={{ ...styles.chromeBtn, ...(mode === m ? styles.chromeBtnActive : {}) }}>
+              {m}
+            </button>
+          ))}
           <span style={styles.wordLabel}>{words} {words === 1 ? 'word' : 'words'}</span>
           <button onClick={onFontToggle} style={styles.chromeBtn}>
             {font === 'serif' ? 'serif' : 'sans'}
@@ -202,6 +213,15 @@ const styles = {
     fontSize: '0.75rem',
     color: 'var(--ink-faint)',
     letterSpacing: '0.04em',
+  },
+  chromeBtnActive: {
+    color: 'var(--ink-faint)',
+  },
+  guestNote: {
+    fontSize: '0.75rem',
+    color: 'var(--ink-ghost)',
+    letterSpacing: '0.04em',
+    fontStyle: 'italic',
   },
   savedDot: {
     fontSize: '1.2rem',
