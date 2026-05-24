@@ -19,6 +19,67 @@ export function applyTheme(mode) {
 const inFlight = { autumn: 0, rain: 0, starry: 0 };
 const MAX_FLIGHT = { autumn: 10, rain: 6, starry: 99 };
 
+// --- Autumn wind: ambient leaves drifting across the screen ---
+
+const WIND_CHARS = 'abcdefghijklmnopqrstuvwxyz';
+let windInFlight = 0;
+const MAX_WIND = 4;
+
+export function spawnWindLeaf() {
+  windInFlight++;
+  const char = WIND_CHARS[Math.floor(Math.random() * WIND_CHARS.length)];
+  const el = makeLetterEl(char);
+
+  const startX = -50;
+  const startY = 40 + Math.random() * (window.innerHeight - 80);
+  const endX = window.innerWidth + 50;
+  const endY = startY + (Math.random() - 0.4) * 260;
+
+  const cp1x = startX + (endX - startX) * (0.2 + Math.random() * 0.15);
+  const cp1y = startY + (Math.random() - 0.5) * 320;
+  const cp2x = startX + (endX - startX) * (0.65 + Math.random() * 0.15);
+  const cp2y = endY + (Math.random() - 0.5) * 320;
+
+  const startRot = (Math.random() - 0.5) * 90;
+  const duration = 1800 + Math.random() * 1400;
+  const t0 = performance.now();
+
+  function frame(now) {
+    const raw = Math.min((now - t0) / duration, 1);
+    const e = easeInOut(raw);
+
+    const x = cubic(e, startX, cp1x, cp2x, endX);
+    const y = cubic(e, startY, cp1y, cp2y, endY);
+    const rot = startRot + Math.sin(raw * Math.PI * 3) * 28 * (1 - raw);
+
+    const fade = raw < 0.1 ? raw / 0.1 : raw > 0.85 ? (1 - raw) / 0.15 : 1;
+    el.style.transform = `translate(${x}px, ${y}px) rotate(${rot}deg)`;
+    el.style.opacity = fade * 0.65;
+
+    if (raw < 1) {
+      requestAnimationFrame(frame);
+    } else {
+      el.remove();
+      windInFlight = Math.max(0, windInFlight - 1);
+    }
+  }
+
+  requestAnimationFrame(frame);
+}
+
+export function spawnAutumnWind() {
+  const roll = Math.random();
+  if (roll < 0.04) {
+    // Rare flurry — 8 to 15 leaves staggered over ~1.5 seconds
+    const count = 8 + Math.floor(Math.random() * 8);
+    for (let i = 0; i < count; i++) {
+      setTimeout(spawnWindLeaf, i * (60 + Math.random() * 80));
+    }
+  } else if (roll < 0.35 && windInFlight < MAX_WIND) {
+    spawnWindLeaf();
+  }
+}
+
 export function triggerAnimation(char, rect, mode, onLand) {
   if (inFlight[mode] >= MAX_FLIGHT[mode]) return false;
   if (mode === 'autumn') animateAutumn(char, rect, onLand);

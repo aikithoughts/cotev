@@ -5,9 +5,9 @@ import StarterKit from '@tiptap/starter-kit';
 import Typography from '@tiptap/extension-typography';
 import Placeholder from '@tiptap/extension-placeholder';
 import { Markdown } from 'tiptap-markdown';
-import { triggerAnimation } from '../animations.js';
+import { triggerAnimation, spawnAutumnWind } from '../animations.js';
 import { PendingChars, pendingKey } from '../extensions/PendingChars.js';
-import { RainAmbient, Starfield } from '../ambient.jsx';
+import { AutumnAmbient, RainAmbient, Starfield } from '../ambient.jsx';
 import '../editor.css';
 
 const AUTOSAVE_DELAY = 2000;
@@ -73,6 +73,8 @@ export default function Editor({ doc, font, mode, guest, onFontToggle, onModeCha
       if (!sel || !sel.rangeCount) return;
       const rect = sel.getRangeAt(0).getBoundingClientRect();
       if (!rect.top && !rect.left) return;
+
+      if (mode === 'autumn') spawnAutumnWind();
 
       if (mode === 'autumn' || mode === 'rain' || mode === 'starry') {
         const id = ++pendingId;
@@ -147,6 +149,7 @@ export default function Editor({ doc, font, mode, guest, onFontToggle, onModeCha
 
   return (
     <div style={styles.page}>
+      {mode === 'autumn' && <AutumnAmbient />}
       {mode === 'rain'   && <RainAmbient />}
       {mode === 'starry' && <Starfield />}
 

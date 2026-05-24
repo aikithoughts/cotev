@@ -1,4 +1,27 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import { spawnWindLeaf } from './animations.js';
+
+export function AutumnAmbient() {
+  useEffect(() => {
+    let active = true;
+
+    function scheduleNext() {
+      if (!active) return;
+      setTimeout(() => {
+        if (!active) return;
+        spawnWindLeaf();
+        scheduleNext();
+      }, 2000 + Math.random() * 4000);
+    }
+
+    // Stagger the first leaf so it doesn't appear instantly on load
+    setTimeout(scheduleNext, 1000 + Math.random() * 2000);
+
+    return () => { active = false; };
+  }, []);
+
+  return null;
+}
 
 export function RainAmbient() {
   const drops = useMemo(() =>
