@@ -6,6 +6,7 @@ import Typography from '@tiptap/extension-typography';
 import Placeholder from '@tiptap/extension-placeholder';
 import { Markdown } from 'tiptap-markdown';
 import { triggerAnimation } from '../animations.js';
+import { AutumnChars, autumnPendingKey } from '../extensions/AutumnChars.js';
 import { RainAmbient, Starfield } from '../ambient.jsx';
 import '../editor.css';
 
@@ -39,6 +40,7 @@ export default function Editor({ doc, font, mode, onFontToggle, onClose }) {
       Typography,
       Markdown,
       Placeholder.configure({ placeholder: 'Begin writing…' }),
+      AutumnChars,
     ],
     content: doc.content || '',
     onUpdate({ editor }) {
@@ -58,6 +60,7 @@ export default function Editor({ doc, font, mode, onFontToggle, onClose }) {
     if (mode === 'plain') return;
 
     const el = editorWrapRef.current;
+    let pendingId = 0;
 
     const handleKeyDown = (e) => {
       if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -67,7 +70,30 @@ export default function Editor({ doc, font, mode, onFontToggle, onClose }) {
       const rect = sel.getRangeAt(0).getBoundingClientRect();
       if (!rect.top && !rect.left) return;
 
-      triggerAnimation(e.key, rect, mode);
+      if (mode === 'autumn') {
+        const id = ++pendingId;
+
+        const started = triggerAnimation(e.key, rect, mode, () => {
+          if (editor.isDestroyed) return;
+          editor.view.dispatch(
+            editor.view.state.tr.setMeta(autumnPendingKey, { removeId: id })
+          );
+        });
+
+        if (started) {
+          setTimeout(() => {
+            if (editor.isDestroyed) return;
+            // Cursor is now one step past the newly inserted character
+            const from = editor.state.selection.from;
+            if (from < 1) return;
+            editor.view.dispatch(
+              editor.view.state.tr.setMeta(autumnPendingKey, { add: { id, from: from - 1, to: from } })
+            );
+          }, 0);
+        }
+      } else {
+        triggerAnimation(e.key, rect, mode);
+      }
     };
 
     el.addEventListener('keydown', handleKeyDown);

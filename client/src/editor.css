@@ -1,5 +1,9 @@
 /* Tiptap editor content styles */
 
+.char-pending {
+  color: var(--ink-ghost);
+}
+
 .tiptap {
   outline: none;
   min-height: 60vh;

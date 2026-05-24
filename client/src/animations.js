@@ -17,13 +17,14 @@ export function applyTheme(mode) {
 
 // Per-mode caps: skip the animation if too many letters already in flight
 const inFlight = { autumn: 0, rain: 0, starry: 0 };
-const MAX_FLIGHT = { autumn: 3, rain: 6, starry: 99 };
+const MAX_FLIGHT = { autumn: 10, rain: 6, starry: 99 };
 
-export function triggerAnimation(char, rect, mode) {
-  if (inFlight[mode] >= MAX_FLIGHT[mode]) return;
-  if (mode === 'autumn') animateAutumn(char, rect);
+export function triggerAnimation(char, rect, mode, onLand) {
+  if (inFlight[mode] >= MAX_FLIGHT[mode]) return false;
+  if (mode === 'autumn') animateAutumn(char, rect, onLand);
   else if (mode === 'rain') animateRain(char, rect);
   else if (mode === 'starry') animateStarry(char, rect);
+  return true;
 }
 
 // --- Shared ---
@@ -59,7 +60,7 @@ function easeInOut(t) {
 
 // --- Autumn: blow in from the left along a random bezier path ---
 
-function animateAutumn(char, rect) {
+function animateAutumn(char, rect, onLand) {
   const el = makeLetterEl(char);
   inFlight.autumn++;
 
@@ -93,6 +94,7 @@ function animateAutumn(char, rect) {
     } else {
       el.remove();
       inFlight.autumn = Math.max(0, inFlight.autumn - 1);
+      onLand?.();
     }
   }
 
