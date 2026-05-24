@@ -23,7 +23,7 @@ export function triggerAnimation(char, rect, mode, onLand) {
   if (inFlight[mode] >= MAX_FLIGHT[mode]) return false;
   if (mode === 'autumn') animateAutumn(char, rect, onLand);
   else if (mode === 'rain') animateRain(char, rect, onLand);
-  else if (mode === 'starry') animateStarry(char, rect);
+  else if (mode === 'starry') animateStarry(char, rect, onLand);
   return true;
 }
 
@@ -165,7 +165,7 @@ function splash(x, y) {
 
 // --- Starry Night: bloom at cursor ---
 
-function animateStarry(char, rect) {
+function animateStarry(char, rect, onLand) {
   const el = makeLetterEl(char);
   const x = rect.left;
   const y = rect.top;
@@ -177,7 +177,7 @@ function animateStarry(char, rect) {
     { transform: `translate(${x}px, ${y}px) scale(1.12)`, filter: 'blur(1px) brightness(2)', opacity: 1 },
     { transform: `translate(${x}px, ${y}px) scale(1)`,    filter: 'blur(0) brightness(1)',   opacity: 1 },
   ], { duration: 380, easing: 'ease-out' })
-    .onfinish = () => el.remove();
+    .onfinish = () => { el.remove(); onLand?.(); };
 
   starBurst(x, y);
 }
