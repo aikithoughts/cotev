@@ -26,6 +26,7 @@ export default function Editor({ doc, font, mode, guest, onFontToggle, onModeCha
   const [words, setWords] = useState(0);
   const saveTimer = useRef(null);
   const editorWrapRef = useRef(null);
+  const [hovering, setHovering] = useState(false);
   const docId = doc._id;
 
   const save = async (content, currentTitle) => {
@@ -150,7 +151,11 @@ export default function Editor({ doc, font, mode, guest, onFontToggle, onModeCha
       {mode === 'starry' && <Starfield />}
 
       {/* Chrome fades to near-invisible when typing, never fully gone */}
-      <div style={{ ...styles.chrome, opacity: focused ? 0.08 : 1 }}>
+      <div
+        style={{ ...styles.chrome, opacity: focused && !hovering ? 0.08 : 1 }}
+        onMouseEnter={() => setHovering(true)}
+        onMouseLeave={() => setHovering(false)}
+      >
         <button onClick={onClose} style={styles.chromeBtn}>← all writing</button>
         <div style={styles.chromeMeta}>
           {guest
