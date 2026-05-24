@@ -2,15 +2,15 @@ import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { DecorationSet, Decoration } from '@tiptap/pm/view';
 
-export const autumnPendingKey = new PluginKey('autumnPending');
+export const pendingKey = new PluginKey('pendingChars');
 
-export const AutumnChars = Extension.create({
-  name: 'autumnChars',
+export const PendingChars = Extension.create({
+  name: 'pendingChars',
 
   addProseMirrorPlugins() {
     return [
       new Plugin({
-        key: autumnPendingKey,
+        key: pendingKey,
         state: {
           init: () => ({ items: [], decorations: DecorationSet.empty }),
           apply(tr, prev) {
@@ -24,7 +24,7 @@ export const AutumnChars = Extension.create({
               }))
               .filter(item => item.from < item.to);
 
-            const meta = tr.getMeta(autumnPendingKey);
+            const meta = tr.getMeta(pendingKey);
             if (meta?.add) items = [...items, meta.add];
             if (meta?.removeId != null) {
               items = items.filter(i => i.id !== meta.removeId);
@@ -41,7 +41,7 @@ export const AutumnChars = Extension.create({
         },
         props: {
           decorations(state) {
-            return autumnPendingKey.getState(state).decorations;
+            return pendingKey.getState(state).decorations;
           },
         },
       }),

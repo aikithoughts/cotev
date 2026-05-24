@@ -6,7 +6,7 @@ import Typography from '@tiptap/extension-typography';
 import Placeholder from '@tiptap/extension-placeholder';
 import { Markdown } from 'tiptap-markdown';
 import { triggerAnimation } from '../animations.js';
-import { AutumnChars, autumnPendingKey } from '../extensions/AutumnChars.js';
+import { PendingChars, pendingKey } from '../extensions/PendingChars.js';
 import { RainAmbient, Starfield } from '../ambient.jsx';
 import '../editor.css';
 
@@ -40,7 +40,7 @@ export default function Editor({ doc, font, mode, onFontToggle, onClose }) {
       Typography,
       Markdown,
       Placeholder.configure({ placeholder: 'Begin writing…' }),
-      AutumnChars,
+      PendingChars,
     ],
     content: doc.content || '',
     onUpdate({ editor }) {
@@ -76,7 +76,7 @@ export default function Editor({ doc, font, mode, onFontToggle, onClose }) {
         const started = triggerAnimation(e.key, rect, mode, () => {
           if (editor.isDestroyed) return;
           editor.view.dispatch(
-            editor.view.state.tr.setMeta(autumnPendingKey, { removeId: id })
+            editor.view.state.tr.setMeta(pendingKey, { removeId: id })
           );
         });
 
@@ -87,12 +87,10 @@ export default function Editor({ doc, font, mode, onFontToggle, onClose }) {
             const from = editor.state.selection.from;
             if (from < 1) return;
             editor.view.dispatch(
-              editor.view.state.tr.setMeta(autumnPendingKey, { add: { id, from: from - 1, to: from } })
+              editor.view.state.tr.setMeta(pendingKey, { add: { id, from: from - 1, to: from } })
             );
           }, 0);
         }
-      } else {
-        triggerAnimation(e.key, rect, mode);
       }
     };
 
