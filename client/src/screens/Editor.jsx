@@ -70,7 +70,7 @@ export default function Editor({ doc, font, mode, onFontToggle, onClose }) {
       const rect = sel.getRangeAt(0).getBoundingClientRect();
       if (!rect.top && !rect.left) return;
 
-      if (mode === 'autumn') {
+      if (mode === 'autumn' || mode === 'rain') {
         const id = ++pendingId;
 
         const started = triggerAnimation(e.key, rect, mode, () => {

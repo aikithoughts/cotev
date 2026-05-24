@@ -22,7 +22,7 @@ const MAX_FLIGHT = { autumn: 10, rain: 6, starry: 99 };
 export function triggerAnimation(char, rect, mode, onLand) {
   if (inFlight[mode] >= MAX_FLIGHT[mode]) return false;
   if (mode === 'autumn') animateAutumn(char, rect, onLand);
-  else if (mode === 'rain') animateRain(char, rect);
+  else if (mode === 'rain') animateRain(char, rect, onLand);
   else if (mode === 'starry') animateStarry(char, rect);
   return true;
 }
@@ -103,7 +103,7 @@ function animateAutumn(char, rect, onLand) {
 
 // --- Rain: fall from above, splash on landing ---
 
-function animateRain(char, rect) {
+function animateRain(char, rect, onLand) {
   const el = makeLetterEl(char);
   inFlight.rain++;
 
@@ -113,12 +113,12 @@ function animateRain(char, rect) {
   const startY = -24;
 
   // Rain falls at a natural speed — 350ms to 550ms
-  const duration = 350 + Math.random() * 200;
+  const duration = 800 + Math.random() * 400;
   const t0 = performance.now();
 
   function frame(now) {
     const t = Math.min((now - t0) / duration, 1);
-    const e = t * t; // ease-in for gravity
+    const e = t * (2 - t); // ease-out: starts fast, decelerates
 
     const x = startX + (endX - startX) * t;
     const y = startY + (endY - startY) * e;
@@ -131,6 +131,7 @@ function animateRain(char, rect) {
       el.remove();
       inFlight.rain = Math.max(0, inFlight.rain - 1);
       splash(endX, endY);
+      onLand?.();
     }
   }
 
